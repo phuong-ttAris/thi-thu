@@ -174,6 +174,7 @@ async function serveStatic(pathname, res) {
 }
 
 await migrate();
+readXlsxBank().catch((e) => console.error('Không đọc được đề thi:', e)); // đọc sẵn để request đầu không phải chờ
 http.createServer(async (req, res) => {
   cors(req, res);
   if (req.method === 'OPTIONS') { res.writeHead(204); return res.end(); }

@@ -9,6 +9,19 @@ export function setToken(token) {
   try { if (token) localStorage.setItem(KEY, token); else localStorage.removeItem(KEY); } catch { /* chế độ riêng tư: chỉ đăng nhập trong phiên */ }
 }
 
+// Đề (không có đáp án, giống nhau cho mọi người) lưu ở localStorage để mở lại trang hiện ngay.
+// shortcut: localStorage giới hạn ~5MB và đọc đồng bộ; đề lên tới vài MB thì chuyển sang IndexedDB.
+const BANK_KEY = 'thi-thu-bank';
+export function getSavedBank() {
+  try {
+    const bank = JSON.parse(localStorage.getItem(BANK_KEY));
+    return Array.isArray(bank) ? bank : null; // dữ liệu hỏng thì coi như chưa có cache
+  } catch { return null; }
+}
+export function saveBank(bank) {
+  try { localStorage.setItem(BANK_KEY, JSON.stringify(bank)); } catch { /* đầy hoặc bị chặn: chỉ mất cache */ }
+}
+
 let onUnauthorized = () => {};
 export const setUnauthorizedHandler = (fn) => { onUnauthorized = fn; };
 

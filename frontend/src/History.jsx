@@ -1,19 +1,20 @@
 import { useEffect, useState } from 'react';
 import { api } from './api.js';
 import ConfirmDialog from './ConfirmDialog.jsx';
+import { SkeletonRows } from './Skeleton.jsx';
 
 const fmtDuration = (s) => (s == null ? '' : `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`);
 const fmtDate = (d) => new Date(d).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' });
 
-export default function History() {
-  const [rows, setRows] = useState(null);
+// rows/onRows: lịch sử cache ở App. Có cache thì hiện ngay, vẫn tải lại ngầm (ví dụ để thấy bài vừa nộp).
+export default function History({ rows, onRows }) {
   const [error, setError] = useState('');
   const [deleteError, setDeleteError] = useState('');
   const [ask, setAsk] = useState(null);
 
   useEffect(() => {
     let alive = true; // bỏ kết quả của lần gọi đã bị hủy (StrictMode gọi effect 2 lần khi dev)
-    api('/api/results').then((r) => alive && setRows(r), (e) => alive && setError(e.message));
+    api('/api/results').then((r) => alive && onRows(r), (e) => alive && setError(e.message));
     return () => { alive = false; };
   }, []);
 
@@ -22,15 +23,15 @@ export default function History() {
     setDeleteError('');
     try {
       await api(id ? `/api/results?id=${id}` : '/api/results', { method: 'DELETE' });
-      setRows((rs) => (id ? rs.filter((r) => r.id !== id) : []));
+      onRows((rs) => (id ? rs.filter((r) => r.id !== id) : []));
     } catch (e) {
       setDeleteError(`Không xóa được: ${e.message}`);
     }
   }
 
   let body;
-  if (error) body = `Không tải được lịch sử: ${error}`;
-  else if (!rows) body = 'Đang tải…';
+  if (!rows && error) body = `Không tải được lịch sử: ${error}`; // tải lại ngầm lỗi thì giữ dữ liệu cache
+  else if (!rows) body = <><span className="sr-only" role="status">Đang tải lịch sử…</span><SkeletonRows /></>;
   else if (!rows.length) body = 'Chưa có bài thi nào.';
   else {
     const avg = rows.reduce((s, r) => s + r.score, 0) / rows.length;
