@@ -50,8 +50,9 @@ Chủ đề lấy theo cột `Chủ đề`. Sheet thiếu cột nào trong số 
 - Bảng tự tạo khi backend khởi động lần đầu.
 
 **2. Backend: Render** (https://render.com) → New → Web Service → chọn repo
-- Root Directory: `backend` · Build: `npm install` · Start: `npm start`
-- Environment: `DATABASE_URL` (từ Neon), `HOST=0.0.0.0`, `CORS_ORIGIN` = URL frontend (bước 3, ví dụ `https://thi-thu.vercel.app`)
+- Root Directory: để trống (gốc repo) · Build: `npm install` · Start: `npm start`
+  (`package.json` ở gốc tự cài và chạy `backend/`; backend tự nghe trên `0.0.0.0` khi chạy trên Render)
+- Environment: `DATABASE_URL` (từ Neon), `CORS_ORIGIN` = URL frontend (bước 3, ví dụ `https://thi-thu.vercel.app`)
 - Health check path: `/api/health`
 - Gói free ngủ sau ~15 phút không dùng; lần gọi đầu tiên sau đó mất khoảng nửa phút đến một phút.
 

@@ -1,0 +1,13 @@
+{
+  "name": "thi-thu",
+  "private": true,
+  "description": "Chạy từ gốc repo (Render): npm install cài backend, npm start chạy backend. Frontend deploy riêng từ frontend/.",
+  "scripts": {
+    "postinstall": "npm ci --prefix backend",
+    "start": "npm start --prefix backend",
+    "test": "npm test --prefix backend"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -6,7 +6,8 @@ import { readXlsxBank } from './bank.mjs';
 import { gradeExam, validUsername } from './lib.mjs';
 
 const PORT = Number(process.env.PORT) || 3100;
-const HOST = process.env.HOST || '127.0.0.1';
+// Render tự đặt biến RENDER và cần app nghe trên 0.0.0.0; chạy local thì chỉ nghe trong máy.
+const HOST = process.env.HOST || (process.env.RENDER ? '0.0.0.0' : '127.0.0.1');
 // Domain frontend được gọi API, cách nhau dấu phẩy, ví dụ https://thi-thu.vercel.app
 const CORS_ORIGINS = (process.env.CORS_ORIGIN || 'http://localhost:5173,http://127.0.0.1:5173').split(',').map((s) => s.trim()).filter(Boolean);
 const SESSION_DAYS = 30;
