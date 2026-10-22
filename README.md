@@ -49,16 +49,11 @@ Chủ đề lấy theo cột `Chủ đề`. Sheet thiếu cột nào trong số 
 - Tạo project (chọn region Singapore) → Connect → copy connection string, đổi `sslmode=require` thành `sslmode=verify-full`.
 - Bảng tự tạo khi backend khởi động lần đầu.
 
-**2. Backend: Render** (https://render.com) → New → Web Service → chọn repo
+**2. App (backend + giao diện): Render** (https://render.com) → New → Web Service → chọn repo
 - Root Directory: để trống (gốc repo) · Build: `npm install` · Start: `npm start`
-  (`package.json` ở gốc tự cài và chạy `backend/`; backend tự nghe trên `0.0.0.0` khi chạy trên Render)
-- Environment: `DATABASE_URL` (từ Neon), `CORS_ORIGIN` = URL frontend (bước 3, ví dụ `https://thi-thu.vercel.app`)
+  (`package.json` ở gốc tự cài `backend/`, cài và build `frontend/`; backend phục vụ cả API `/api/...` lẫn giao diện, cùng một URL)
+- Environment: `DATABASE_URL` (từ Neon). Không cần `CORS_ORIGIN` hay `VITE_API_URL` vì giao diện và API cùng domain.
 - Health check path: `/api/health`
-- Gói free ngủ sau ~15 phút không dùng; lần gọi đầu tiên sau đó mất khoảng nửa phút đến một phút.
+- Gói free ngủ sau ~15 phút không dùng; lần mở đầu tiên sau đó mất khoảng nửa phút đến một phút.
 
-**3. Frontend: Vercel** (https://vercel.com) → New Project → chọn repo
-- Root Directory: `frontend` · Framework: Vite
-- Environment: `VITE_API_URL` = URL backend trên Render (ví dụ `https://thi-thu-api.onrender.com`)
-- Sau khi có URL frontend, quay lại Render cập nhật `CORS_ORIGIN`.
-
-Đổi `VITE_API_URL` thì phải build lại frontend (Vite nhúng giá trị lúc build).
+**Tùy chọn: frontend riêng trên Vercel** → Root Directory `frontend`, Framework Vite, `VITE_API_URL` = URL Render; trên Render đặt `CORS_ORIGIN` = URL Vercel. Đổi `VITE_API_URL` thì phải build lại frontend (Vite nhúng giá trị lúc build).

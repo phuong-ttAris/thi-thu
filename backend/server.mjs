@@ -1,6 +1,9 @@
 import http from 'node:http';
 import crypto from 'node:crypto';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 import { promisify } from 'node:util';
+import { fileURLToPath } from 'node:url';
 import { pool, migrate } from './db.mjs';
 import { readXlsxBank } from './bank.mjs';
 import { gradeExam, validUsername } from './lib.mjs';
@@ -149,14 +152,37 @@ function cors(req, res) {
   }
 }
 
+// Giao diện đã build (frontend/dist), có khi deploy chung một service; dev local thì Vite phục vụ nên thư mục có thể chưa có.
+const DIST = fileURLToPath(new URL('../frontend/dist/', import.meta.url));
+const TYPES = {
+  '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8',
+  '.svg': 'image/svg+xml', '.png': 'image/png', '.ico': 'image/x-icon', '.json': 'application/json',
+};
+
+// File có thật trong dist thì trả file đó; đường dẫn khác trả index.html (SPA). Không cho thoát ra ngoài dist.
+async function serveStatic(pathname, res) {
+  let file;
+  try { file = path.join(DIST, decodeURIComponent(pathname)); } catch { return send(res, 400, { error: 'Đường dẫn không hợp lệ' }); }
+  if (!file.startsWith(DIST)) return send(res, 404, { error: 'Not found' });
+  let data = await fs.readFile(file).catch(() => null);
+  if (!data) data = await fs.readFile((file = path.join(DIST, 'index.html'))).catch(() => null);
+  if (!data) return send(res, 404, { error: 'Not found' });
+  // File trong assets/ có hash trong tên nên cache lâu; index.html luôn lấy bản mới để nhận bản deploy mới.
+  const immutable = file.startsWith(path.join(DIST, 'assets'));
+  res.writeHead(200, { 'content-type': TYPES[path.extname(file)] || 'application/octet-stream', 'cache-control': immutable ? 'public, max-age=31536000, immutable' : 'no-cache' });
+  res.end(data);
+}
+
 await migrate();
 http.createServer(async (req, res) => {
   cors(req, res);
   if (req.method === 'OPTIONS') { res.writeHead(204); return res.end(); }
-  const route = routes[`${req.method} ${new URL(req.url, 'http://x').pathname}`];
-  if (!route) return send(res, 404, { error: 'Not found' });
+  const { pathname } = new URL(req.url, 'http://x');
+  const route = routes[`${req.method} ${pathname}`];
   try {
-    await route(req, res);
+    if (route) await route(req, res);
+    else if (req.method === 'GET' && !pathname.startsWith('/api/')) await serveStatic(pathname, res);
+    else send(res, 404, { error: 'Not found' });
   } catch (e) {
     if (!e.status) console.error(e);
     if (!res.headersSent) send(res, e.status || 500, { error: e.status ? e.message : 'Lỗi máy chủ' });
