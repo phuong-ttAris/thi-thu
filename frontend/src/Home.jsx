@@ -7,16 +7,43 @@ import History from './History.jsx';
 export default function Home({ user, settings, onSettings, onStart, onLogout }) {
   const [bank, setBank] = useState(null);
   const [error, setError] = useState('');
+  const [attempt, setAttempt] = useState(0); // tăng để tải lại đề khi bấm "Thử lại"
   const set = (k) => (e) => onSettings({ ...settings, [k]: e.target.value });
 
   useEffect(() => {
     let alive = true; // bỏ kết quả của lần gọi đã bị hủy (StrictMode gọi effect 2 lần khi dev)
+    setError('');
     api('/api/bank').then((b) => alive && setBank(b), (e) => alive && setError(e.message));
     return () => { alive = false; };
-  }, []);
+  }, [attempt]);
+
+  const userBox = <div className="user"><span>👤 {user}</span><button onClick={onLogout}>Đăng xuất</button></div>;
+
+  // Chưa đọc xong file Excel thì chỉ hiện màn chờ (hoặc lỗi + thử lại), chưa hiện form và lịch sử.
+  if (!bank) {
+    return (
+      <main>
+        <Header subtitle="Thi thử trắc nghiệm">{userBox}</Header>
+        <section className="card loading" role="status" aria-live="polite">
+          {error ? (
+            <>
+              <p className="err">Không tải được đề thi: {error}</p>
+              <button className="pri" onClick={() => setAttempt((n) => n + 1)}>Thử lại</button>
+            </>
+          ) : (
+            <>
+              <div className="spinner" aria-hidden="true" />
+              <p>Đang tải đề thi…</p>
+              <p className="muted">Lần mở đầu tiên có thể mất tới một phút nếu máy chủ đang khởi động.</p>
+            </>
+          )}
+        </section>
+      </main>
+    );
+  }
 
   const topics = new Map();
-  for (const q of bank ?? []) topics.set(q.topic, (topics.get(q.topic) || 0) + 1);
+  for (const q of bank) topics.set(q.topic, (topics.get(q.topic) || 0) + 1);
 
   function start() {
     const pool = bank.filter((q) => !settings.topic || q.topic === settings.topic);
@@ -29,27 +56,23 @@ export default function Home({ user, settings, onSettings, onStart, onLogout }) 
     });
   }
 
-  const info = error ? `Không đọc được đề: ${error}`
-    : !bank ? 'Đang đọc đề…'
-      : bank.length ? `${bank.length} câu hỏi · ${topics.size} chủ đề` : 'Chưa có câu hỏi trong thư mục de-thi/ của backend.';
+  const info = bank.length ? `${bank.length} câu hỏi · ${topics.size} chủ đề` : 'Chưa có câu hỏi trong thư mục de-thi/ của backend.';
 
   return (
     <main>
-      <Header subtitle={info}>
-        <div className="user"><span>👤 {user}</span><button onClick={onLogout}>Đăng xuất</button></div>
-      </Header>
+      <Header subtitle={info}>{userBox}</Header>
       <section className="card">
         <div className="settings">
           <label className="field wide">Chủ đề
             <select value={settings.topic} onChange={set('topic')}>
-              <option value="">Tất cả chủ đề ({bank?.length ?? 0} câu)</option>
+              <option value="">Tất cả chủ đề ({bank.length} câu)</option>
               {[...topics].map(([name, n]) => <option key={name} value={name}>{name} ({n} câu)</option>)}
             </select>
           </label>
           <label className="field">Số câu <input type="number" min="1" value={settings.count} onChange={set('count')} /></label>
           <label className="field">Thời gian (phút) <input type="number" min="1" value={settings.minutes} onChange={set('minutes')} /></label>
         </div>
-        <button className="pri big" disabled={!bank?.length} onClick={start}>Bắt đầu làm bài</button>
+        <button className="pri big" disabled={!bank.length} onClick={start}>Bắt đầu làm bài</button>
       </section>
       <History />
     </main>
